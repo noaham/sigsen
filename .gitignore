@@ -1,0 +1,15 @@
+# Python
+*.pyc
+
+# Environments
+.venv
+
+# Editor config
+.idea
+
+# macos
+.DS_Store
+
+# build files
+*.egg-info
+build/
