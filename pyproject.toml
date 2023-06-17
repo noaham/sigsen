@@ -8,6 +8,7 @@ description = "Simple statistical modelling for signal localisation and attribut
 version = "0.0.0"
 dependencies = [
     "numpy",
+    "matplotlib",
 ]
 
 [tool.setuptools.packages]
