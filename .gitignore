@@ -13,3 +13,6 @@
 # build files
 *.egg-info
 build/
+
+# internal testing
+examples/testing.ipynb
