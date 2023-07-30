@@ -3,12 +3,13 @@ Module providing utilities for the purpose of simulating data collected by senso
 """
 
 import numpy as np
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import sigsen.analysis as an
 plt.style.use("seaborn")
 
 
-def dist(p: np.ndarray, q: np.ndarray) -> float:
+def dist(p: np.ndarray, q: np.ndarray) -> np.ndarray:
     if p.shape != q.shape:
         raise TypeError(f'Inputs shapes {p.shape} and {q.shape} are not equal.')
     if len(p.shape) == 1:
@@ -76,22 +77,50 @@ class SensorField:
         if extent is None:
             extent = (self.xmin, self.xmax, self.ymin, self.ymax)
 
-        xstep = (extent[1] - extent[0]) / (shape[1] - 1)
-        ystep = (extent[3] - extent[2]) / (shape[0] - 1)
+        xstep = (extent[1] - extent[0]) / shape[1]
+        ystep = (extent[3] - extent[2]) / shape[0]
 
         sensors = np.array([
             [
-                extent[0] + xstep * i,
-                extent[2] + ystep * j,
+                extent[0] + xstep * (i+0.5),
+                extent[2] + ystep * (j+0.5),
             ] for i in range(shape[1]) for j in range(shape[0])
         ])
 
         self.add_sensors(sensors)
 
-    def display(self) -> None:
+    def display(self):
+        width, height = self.xmax - self.xmin, self.ymax - self.ymin
+        bf = 0.1
+        xmargin = bf * width
+        ymargin = bf * height
+
         fig, ax = plt.subplots()
-        ax.scatter(self.sensors[:, 0], self.sensors[:, 1])
-        plt.show()
+        rectangle = Rectangle(
+            (self.xmin, self.ymin),
+            width,
+            height,
+            color='grey',
+            alpha=0.05,
+            linewidth=1,
+            zorder=2,
+        )
+        ax.add_patch(rectangle)
+
+        ax.scatter(
+            self.sensors[:, 0],
+            self.sensors[:, 1],
+            zorder=100,
+            c='blue',
+            marker='.'
+        )
+
+        xlims = [self.xmin - xmargin, self.xmax + xmargin]
+        ylims = [self.ymin - ymargin, self.ymax + ymargin]
+
+        ax.set_xlim(*xlims)
+        ax.set_ylim(*ylims)
+        return fig, ax
 
     def gen_data(
             self,
@@ -105,7 +134,8 @@ class SensorField:
 
         signals = np.array([
             [
-                dist(source, sensor).reshape(()) / signal_speed for source in source_locs
+                dist(source, sensor).reshape(()) / signal_speed
+                for source in source_locs
             ] for sensor in self.sensors
         ]) + self.rng.normal(0, noise, (len(self.sensors), num_sources))
 

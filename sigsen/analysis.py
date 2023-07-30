@@ -5,7 +5,6 @@ Module providing statistical modelling functionality
 import numpy as np
 import sigsen.simulator as sim
 from dataclasses import dataclass
-import matplotlib.pyplot as plt
 
 
 @dataclass
@@ -63,18 +62,28 @@ class SensorData:
     def compute_distribution(self, resolution: tuple[int, int]) -> None:
         self.log_distribution = self.signal_distribution(resolution=resolution)
 
-    def display(self):
-        fig, ax = plt.subplots()
+    def display(self, exp_factor: float = 0.01):
+        range = sim.SensorField(*self.extent, sensor_locations=self.sensors)
+        fig, ax = range.display()
+
         if self.log_distribution is not None:
-            plt.imshow(self.log_distribution, cmap='hot', interpolation='nearest')
-        ax.scatter(
-            x=self.sensors[:, 0],
-            y=self.sensors[:, 1],
-            c='tab:blue'
-        )
+            a = np.exp(exp_factor * self.log_distribution)
+            ax.imshow(
+                a,
+                cmap='magma',
+                interpolation='nearest',
+                extent=self.extent,
+                zorder=50,
+                alpha=a/np.max(a),
+            )
+
         ax.scatter(
             x=self.sources[:, 0],
             y=self.sources[:, 1],
-            c='red'
+            c='limegreen',
+            marker='*',
+            zorder=100,
+            s=100,
         )
-        plt.show()
+
+        return fig, ax
