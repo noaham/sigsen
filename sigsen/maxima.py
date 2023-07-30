@@ -3,7 +3,8 @@ A module providing utilities for finding local maxima in numpy arrays
 """
 
 import numpy as np
-from itertools import combinations, product
+from itertools import product
+
 
 def max_ij(a: np.ndarray) -> tuple[int, ...]:
     return tuple(np.unravel_index(np.argmax(a), a.shape))
