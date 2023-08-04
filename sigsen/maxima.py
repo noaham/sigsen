@@ -31,11 +31,23 @@ def neighbours(
     return [idx for idx in n if loc_in_shape(idx, shape)]
 
 
+def lengthen(l: list, n: int) -> list:
+    idx = 0
+    long_l = []
+    while len(long_l) < n:
+        long_l += [l[idx]]
+        idx = (idx + 1) % len(l)
+    return long_l
+
+
 def maxima(a: np.ndarray, n: int) -> list[tuple[int, ...], ...]:
     x = np.copy(a)
     max_locations = []
     while len(max_locations) < n:
         max_loc = max_ij(x)
+        if x[max_loc] == -np.Inf:
+            max_locations = lengthen(max_locations, n)
+            break
         if -np.Inf not in [x[n] for n in neighbours(max_loc, x.shape)]:
             max_locations += [max_loc]
         x[max_loc] = -np.Inf

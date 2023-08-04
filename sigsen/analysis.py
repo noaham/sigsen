@@ -5,6 +5,7 @@ Module providing statistical modelling functionality
 import numpy as np
 import sigsen.simulator as sim
 from sigsen.maxima import maxima
+from itertools import permutations
 from dataclasses import dataclass
 
 
@@ -118,3 +119,11 @@ class SensorData:
             )
 
         return fig, ax
+
+    def score(self) -> float:
+        maxes = self.maxima_locs()
+        srcs = self.sources
+        perms = [list(p) for p in permutations(range(len(srcs)))]
+        return float(
+            min(np.sum(np.square(sim.dist(maxes, srcs[p]))) for p in perms)
+        ) / len(srcs)
