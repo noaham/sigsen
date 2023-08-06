@@ -175,7 +175,7 @@ class SensorData:
 
     def display(
             self,
-            exp_factor: float = 0.01,
+            exp_factor: float = 1e-4,
             show_sources: bool = True,
             show_maxima: bool = False,
     ):
@@ -186,7 +186,7 @@ class SensorData:
         ----------
         exp_factor : float, optional
             A factor with which to scale the log posterior before taking the
-            exponential. Useful to get sensible pictures (default is 0.1).
+            exponential. Useful to get sensible pictures (default is 1e-4).
         show_sources : bool, optional
             If `True`, show the true location of the sources (default is `True`)
         show_maxima : bool, optional
