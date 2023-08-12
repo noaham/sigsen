@@ -243,6 +243,7 @@ class SensorField:
 
     def gen_data(
             self,
+            time_span: float = 0,
             num_sources: int = 1,
             source_locs: np.ndarray | None = None,
             signal_speed: float = 1,
@@ -253,11 +254,15 @@ class SensorField:
 
         Parameters
         ----------
+        time_span: float
+            The time span over which to simulate source events (default is zero which
+            means all source events are simultaneous).
         num_sources : int, optional
             The number of signal sources (default is 1).
         source_locs : np.ndarray | None, optional
-            The source locations given as an array of `(x,y)` pairs (default is
-            `None` which causes random source locations to be used).
+            The source locations given as an array of `(x,y)` pairs if `time_span` is
+            zero, or `(x,y,t)` triples which additionally indicate the time of the
+            source (default is `None` which causes random source locations to be used).
         signal_speed : float, optional
             The speed at which signals travel (default is 1).
         noise : float, optional
@@ -271,10 +276,15 @@ class SensorField:
         """
         if source_locs is None:
             source_locs = self._random_locations(num_sources)
+        if source_locs.shape[2] == 2:
+            source_locs = np.concatenate(
+                (source_locs, time_span * self.rng.random((num_sources, 1))),
+                axis=1,
+            )
 
         signals = np.array([
             [
-                dist(source, sensor).reshape(()) / signal_speed
+                source[2] + dist(source[:2], sensor).reshape(()) / signal_speed
                 for source in source_locs
             ] for sensor in self.sensors
         ]) + self.rng.normal(0, noise, (len(self.sensors), num_sources))
