@@ -9,6 +9,24 @@ from itertools import permutations
 from dataclasses import dataclass
 
 
+def permute21(a: tuple) -> tuple:
+    """
+    Utility function to permute the first two entries of a tuple.
+
+    Parameters
+    ----------
+    a : tuple
+        The tuple
+
+    Returns
+    -------
+    tuple
+        The original tuple with the first two entries swapped.
+
+    """
+    return a[2:0:-1] + a[2:]
+
+
 @dataclass
 class SensorData:
     """
@@ -19,12 +37,14 @@ class SensorData:
     sensors: np.ndarray
         The locations of the sensors as a list of `(x,y)` pairs.
     sources: np.ndarray
-        The locations of the sources as a list of `(x,y)` pairs.
+        The locations of the sources as a list of `(x,y,t)` triples.
     signals: np.ndarray
         The signal data ordered vertically by sensor and horizontally a list of
         signal arrival times.
     extent: tuple[float, ...]
         The bounding box of the sensor field in the format `(xmin, xmax, ymin, ymax)`.
+    t_max: float
+        The time period in which events occur.
     signal_speed: float
         The speed the signals travel at.
     noise: float
@@ -39,6 +59,7 @@ class SensorData:
     signals: np.ndarray
 
     extent: tuple[float, ...]
+    t_max: float
     signal_speed: float
     noise: float
 
@@ -64,7 +85,8 @@ class SensorData:
             self,
             i: int,
             j: int,
-            resolution: tuple[int, int]
+            k: int,
+            resolution: tuple[int, int, int]
     ) -> np.ndarray:
         """
         Utility method to translate array index to cartesian coordinates.
@@ -75,27 +97,30 @@ class SensorData:
             Row index in array
         j : int
             Column index in array
-        resolution : tuple[int, int]
+        k : int
+            Sheet index in array
+        resolution : tuple[int, int, int]
             The shape of the array, i.e. the size of the grid that the bounding box
             has been divided into.
 
         Returns
         -------
         np.ndarray
-            A array of shape `(2,)` giving the cartesian coordinates of the centre of
-            grid square at index `[i, j]`.
+            A array of shape `(3,)` giving the cartesian coordinates of the centre of
+            grid square at index `[i, j]` plus the time step of the sheet.
 
         """
         x_step = (self.extent[1] - self.extent[0]) / resolution[0]
         y_step = (self.extent[3] - self.extent[2]) / resolution[1]
         return np.array([
             self.extent[0] + (j + 0.5) * x_step,
-            self.extent[3] - (i + 0.5) * y_step
+            self.extent[3] - (i + 0.5) * y_step,
+            k * self.t_max / resolution[-1]
         ])
 
     def signal_distribution(
             self,
-            resolution: tuple[int, int],
+            resolution: tuple[int, int, int],
             sensor_indices: tuple[int, ...] | None = None,
             source_indices: tuple[int, ...] | None = None,
     ) -> np.ndarray:
@@ -104,8 +129,8 @@ class SensorData:
 
         Parameters
         ----------
-        resolution : tuple[int, int]
-            The grid size (#rows, #columns), in which to break up the extent.
+        resolution : tuple[int, int, int]
+            The grid size (#rows, #columns, #frames), in which to break up the extent.
         sensor_indices : tuple[int, ...] | None, optional
             The indices of the sensors for which the data will be used (default is
             `None` which will use data from all sensors).
@@ -124,30 +149,37 @@ class SensorData:
         if source_indices is None:
             source_indices = tuple(range(len(self.sources)))
 
-        log_dist = np.zeros(resolution[::-1])
+        log_dist = np.zeros(permute21(resolution))
+
+        def time_to_t_idx(time):
+            return int(time * resolution[-1] / self.t_max)
 
         for sensor, signal in zip(
                 self.sensors[sensor_indices, :],
                 self.signals[np.ix_(sensor_indices, source_indices)]
         ):
-            for idx, d in np.ndenumerate(log_dist):
-                i, j = idx
-                location = self._idx_to_loc(i, j, resolution)
+            k_max = time_to_t_idx(signal)
+            for idx, _ in np.ndenumerate(log_dist[..., :k_max+1]):
+                i, j, k = idx
+                location = self._idx_to_loc(i, j, k, resolution)
+                xy_loc = location[:1]
+                t = location[-1]
 
-                mean_shifted = signal - sim.dist(sensor, location)
+                expected_time = t + sim.dist(sensor, xy_loc) / self.signal_speed
+                mean_shifted = signal - expected_time
                 log_vals = -0.5 * np.square(mean_shifted / self.noise)
                 log_dist[idx] += np.logaddexp.reduce(log_vals)
 
         log_dist -= np.logaddexp.reduce(log_dist, axis=None)
         return log_dist
 
-    def compute_distribution(self, resolution: tuple[int, int]) -> None:
+    def compute_distribution(self, resolution: tuple[int, int, int]) -> None:
         """
         Compute the log posterior distribution for all data and save data.
 
         Parameters
         ----------
-        resolution : tuple[int, int]
+        resolution : tuple[int, int, int]
             The grid size (#rows, #columns), in which to break up the extent.
 
         Returns
@@ -164,14 +196,16 @@ class SensorData:
         Returns
         -------
         np.ndarray
-            The cartesian coordinates of the local maxima.
+            The cartesian coordinates of the local maxima with time in the third column.
 
         """
         if self.log_distribution is None:
             raise ValueError('The log distribution has not yet been calculated')
-        resolution = self.log_distribution.shape[::-1]
+        resolution = permute21(self.log_distribution.shape)
         maxima_idx = maxima(self.log_distribution, self.sources.shape[0])
-        return np.array([self._idx_to_loc(i, j, resolution) for i, j in maxima_idx])
+        return np.array([
+            self._idx_to_loc(i, j, k, resolution) for i, j, k in maxima_idx
+        ])
 
     def display(
             self,

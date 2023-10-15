@@ -276,7 +276,7 @@ class SensorField:
         """
         if source_locs is None:
             source_locs = self._random_locations(num_sources)
-        if source_locs.shape[2] == 2:
+        if source_locs.shape[1] == 2:
             source_locs = np.concatenate(
                 (source_locs, time_span * self.rng.random((num_sources, 1))),
                 axis=1,
@@ -294,6 +294,7 @@ class SensorField:
             sources=source_locs,
             signals=signals,
             extent=(self.xmin, self.xmax, self.ymin, self.ymax),
+            t_max=np.max(signals) + 1,
             signal_speed=signal_speed,
             noise=noise
         )
