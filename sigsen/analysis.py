@@ -207,7 +207,7 @@ class SensorData:
             self._idx_to_loc(i, j, k, resolution) for i, j, k in maxima_idx
         ])
 
-    def display(
+    def display_flat(
             self,
             exp_factor: float = 1e-4,
             show_sources: bool = True,
@@ -237,7 +237,8 @@ class SensorData:
         fig, ax = range.display()
 
         if self.log_distribution is not None:
-            a = np.exp(exp_factor * self.log_distribution)
+            flat_dist = np.sum(self.log_distribution, axis=2)
+            a = np.exp(exp_factor * flat_dist)
             ax.imshow(
                 a,
                 cmap='magma',
