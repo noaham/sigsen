@@ -2,7 +2,7 @@
 *.pyc
 
 # Environments
-.venv
+.venv*
 
 # Editor config
 .idea
@@ -16,3 +16,4 @@ build/
 
 # internal testing
 examples/testing.ipynb
+examples/*.npy

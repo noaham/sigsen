@@ -1,12 +1,11 @@
 """
 Module providing utilities for the purpose of simulating data collected by sensors.
 """
-
+import matplotlib.colors
 import numpy as np
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import sigsen.analysis as an
-plt.style.use("seaborn")
 
 
 def dist(p: np.ndarray, q: np.ndarray) -> np.ndarray:
@@ -294,7 +293,7 @@ class SensorField:
             sources=source_locs,
             signals=signals,
             extent=(self.xmin, self.xmax, self.ymin, self.ymax),
-            t_max=np.max(signals) + 1,
+            t_max=np.min(np.max(signals, axis=1)) + 0.5,
             signal_speed=signal_speed,
             noise=noise
         )
