@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 from matplotlib import colormaps
 from matplotlib.colors import LinearSegmentedColormap as LSCmap, Normalize, Colormap
 
+plt.style.use('seaborn-v0_8')
+
 
 def cmap_with_alpha(cmap_name: str) -> Colormap:
     """
@@ -186,8 +188,7 @@ class SensorData:
                 self.sensors[sensor_indices, :],
                 self.signals[np.ix_(sensor_indices, source_indices)]
         ):
-            k_max = time_to_t_idx(np.max(signal))
-            for idx, _ in np.ndenumerate(log_dist): #[..., :k_max+1]):
+            for idx, _ in np.ndenumerate(log_dist):
                 i, j, k = idx
                 location = self._idx_to_loc(i, j, k, resolution)
                 xy_loc = location[:2]
@@ -286,9 +287,11 @@ class SensorData:
         show_maxima : bool, optional
             If `True`, show the calculated maxima in the posterior, i.e. the most
             likely locations of the sources according to the posterior (default is
-            `True`).
+            `False`).
         flatten : bool, optional
-            If `True`
+            If `True` the posterior is flattened to a single frame by taking the
+            maximum along the time axis (a more rigorous approach may be implemented
+            later) (default is `False`).
         fps : int, optional
             Frames per second of the animation. Default is 10.
 
@@ -318,7 +321,7 @@ class SensorData:
                 interpolation='nearest',
                 extent=self.extent,
                 zorder=50,
-                alpha=a/np.max(a),
+                #alpha=a/np.max(a),
             )
 
             if show_sources:
@@ -411,8 +414,8 @@ class SensorData:
 
             if len(frame_src_events) > 0:
                 # This and the below if block are here as the set_alpha method throws an
-                # error if given an empty tuple - even if the set of items in the collection
-                # is empty.
+                # error if given an empty tuple - even if the set of items in the
+                # collection is empty.
                 source_sc.set_alpha(frame_src_alphas)
             if len(frame_max_events) > 0:
                 maxima_sc.set_alpha(frame_max_alphas)

@@ -1,11 +1,13 @@
 """
 Module providing utilities for the purpose of simulating data collected by sensors.
 """
-import matplotlib.colors
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Rectangle
-import matplotlib.pyplot as plt
+
 import sigsen.analysis as an
+
+plt.style.use('seaborn-v0_8')
 
 
 def dist(p: np.ndarray, q: np.ndarray) -> np.ndarray:
@@ -253,7 +255,7 @@ class SensorField:
 
         Parameters
         ----------
-        time_span: float
+        time_span: float, optional
             The time span over which to simulate source events (default is zero which
             means all source events are simultaneous).
         num_sources : int, optional
