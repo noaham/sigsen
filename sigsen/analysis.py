@@ -431,6 +431,7 @@ class SensorData:
             frames=num_frames,
             interval=1000 / fps
         )
+        plt.close()
         return anim
 
     def score(self) -> float:
