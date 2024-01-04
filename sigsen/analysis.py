@@ -272,7 +272,8 @@ class SensorData:
             show_sources: bool = True,
             show_maxima: bool = False,
             flatten: bool = False,
-            fps: int = 10
+            fps: int = 10,
+            without_posterior: bool = False,
     ):
         """
         Displays the posterior distribution.
@@ -294,6 +295,8 @@ class SensorData:
             later) (default is `False`).
         fps : int, optional
             Frames per second of the animation. Default is 10.
+        without_posterior : bool, optional
+            If `True` the posterior is not shown (default is `False`).
 
         Returns
         -------
@@ -301,28 +304,34 @@ class SensorData:
 
         """
 
-        self._log_dist_error()
+        with_posterior = not without_posterior
+        if with_posterior:
+            self._log_dist_error()
         ar = sim.SensorField(*self.extent, sensor_locations=self.sensors)
         fig, ax = ar.display()
 
-        if flatten:
+        if without_posterior:
+            dist = None
+        elif flatten:
             dist = np.max(self.log_distribution, axis=2)
             dist = dist[..., np.newaxis]
         else:
             dist = self.log_distribution
 
-        a = np.exp(exp_factor * dist)
-        norm = Normalize(vmin=np.min(a), vmax=np.max(a))
+        if with_posterior:
+            a = np.exp(exp_factor * dist)
+            norm = Normalize(vmin=np.min(a), vmax=np.max(a))
 
-        if dist.shape[-1] == 1:
-            ax.imshow(
-                a,
-                cmap=MAGMA_ALPHAS_cmap,
-                interpolation='nearest',
-                extent=self.extent,
-                zorder=50,
-                #alpha=a/np.max(a),
-            )
+        if without_posterior or dist.shape[-1] == 1:
+            if with_posterior:
+                ax.imshow(
+                    a,
+                    cmap=MAGMA_ALPHAS_cmap,
+                    interpolation='nearest',
+                    extent=self.extent,
+                    zorder=50,
+                    #alpha=a/np.max(a),
+                )
 
             if show_sources:
                 ax.scatter(
@@ -333,7 +342,8 @@ class SensorData:
                     zorder=100,
                     s=100,
                 )
-            if show_maxima:
+
+            if show_maxima and with_posterior:
                 max_locs = self.maxima_locs()
                 ax.scatter(
                     x=max_locs[:, 0],
